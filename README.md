@@ -38,7 +38,7 @@ Early release (v0.1). The image actions, rename, hash and copy work today and ar
 
 ## Install
 
-Download for your OS from [Releases](https://github.com/MalyStern/quickfile-actions/releases): `.exe` (Windows), `.dmg` (macOS, universal), `.AppImage`/`.deb` (Linux). Each release includes `SHA256SUMS`.
+Download for your OS from [Releases](https://github.com/MalyStern/quickfile-actions/releases): `.exe` (Windows), `.dmg` (macOS — separate Intel and Apple Silicon builds), `.AppImage`/`.deb` (Linux). Each release includes `SHA256SUMS`.
 
 ## Build from source
 
