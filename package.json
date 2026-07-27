@@ -26,7 +26,9 @@
     "electron"
   ],
   "main": "./out/main/index.js",
+  "bin": { "quickfile": "bin/quickfile.mjs" },
   "scripts": {
+    "build:cli": "esbuild src/cli/index.ts --bundle --platform=node --format=esm --packages=external --outfile=bin/quickfile.mjs",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",

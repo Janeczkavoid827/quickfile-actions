@@ -55,6 +55,21 @@ npm run dist     # build installers into release/
 
 Electron + React + TypeScript, image work by [sharp](https://sharp.pixelplumbing.com/) (libvips). The operation engine is `src/main/ops.ts`.
 
+## Command line
+
+The same actions, scriptable:
+
+```bash
+quickfile convert jpg *.heic        # HEIC -> JPG
+quickfile resize photo.png --width 1920
+quickfile clean *.jpg               # strip EXIF/GPS
+quickfile merge a.pdf b.pdf         # -> merged.pdf
+quickfile zip report.docx data.csv  # -> archive.zip
+quickfile hash installer.exe        # print SHA-256
+```
+
+Run `quickfile` with no arguments for the full help. (Built from source with `npm run build:cli` → `bin/quickfile.mjs`.)
+
 ## FAQ / how-to
 
 **How do I convert HEIC to JPG without uploading it?**
