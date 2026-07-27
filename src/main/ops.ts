@@ -6,13 +6,24 @@ import sharp from 'sharp'
 import { PDFDocument } from 'pdf-lib'
 import AdmZip from 'adm-zip'
 import { createHash } from 'node:crypto'
-import { createReadStream } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { basename, dirname, extname, join } from 'node:path'
-import type { ImageFormat, RenameRule, RenamePlanItem } from '../shared/types'
+import { basename, dirname, extname, join, resolve, sep } from 'node:path'
+import type { ImageFormat, OpResult, RenameRule, RenamePlanItem } from '../shared/types'
+
+/** A path that doesn't exist yet — appends -1, -2, … so we never clobber a file. */
+function uniquePath(dir: string, stem: string, ext: string): string {
+  let p = join(dir, `${stem}.${ext}`)
+  let i = 1
+  while (existsSync(p)) {
+    p = join(dir, `${stem}-${i}.${ext}`)
+    i++
+  }
+  return p
+}
 
 function outPath(input: string, suffix: string, ext: string): string {
-  return join(dirname(input), `${basename(input, extname(input))}-${suffix}.${ext}`)
+  return uniquePath(dirname(input), `${basename(input, extname(input))}-${suffix}`, ext)
 }
 
 const normExt = (input: string): string => {
@@ -96,21 +107,67 @@ export function planRename(files: string[], rule: RenameRule): RenamePlanItem[] 
   })
 }
 
-export async function applyRename(plan: RenamePlanItem[]): Promise<void> {
-  for (const item of plan) {
-    if (item.from !== item.to) await rename(item.from, item.to)
+/**
+ * Rename safely. Refuses to run (touching nothing) if two files would collide or
+ * an unrelated existing file would be clobbered, and renames via temp names so a
+ * chain like a→b, b→c can't destroy data. Returns a per-file result.
+ */
+export async function applyRename(plan: RenamePlanItem[]): Promise<OpResult[]> {
+  const moves = plan.filter((p) => p.from !== p.to)
+
+  const targets = new Set<string>()
+  for (const m of moves) {
+    if (targets.has(m.to)) {
+      return plan.map((p) => ({ ok: false, input: p.from, error: 'Two files would get the same name' }))
+    }
+    targets.add(m.to)
   }
+
+  const sources = new Set(plan.map((p) => p.from))
+  for (const m of moves) {
+    if (existsSync(m.to) && !sources.has(m.to)) {
+      return plan.map((p) => ({
+        ok: false,
+        input: p.from,
+        error: `A file named "${basename(m.to)}" already exists`,
+      }))
+    }
+  }
+
+  const staged: { tmp: string; to: string; from: string }[] = []
+  for (let i = 0; i < moves.length; i++) {
+    const tmp = `${moves[i].from}.qftmp.${i}`
+    await rename(moves[i].from, tmp)
+    staged.push({ tmp, to: moves[i].to, from: moves[i].from })
+  }
+
+  const results: OpResult[] = []
+  for (const s of staged) {
+    try {
+      await rename(s.tmp, s.to)
+      results.push({ ok: true, input: s.from, output: s.to })
+    } catch (e) {
+      try {
+        await rename(s.tmp, s.from) // restore rather than lose the file
+      } catch {
+        /* leave the .qftmp file in place */
+      }
+      results.push({ ok: false, input: s.from, error: e instanceof Error ? e.message : String(e) })
+    }
+  }
+  return results
 }
 
 /** Merge several PDFs (in the given order) into one new "merged.pdf". */
 export async function mergePdfs(files: string[]): Promise<string> {
+  if (files.length === 0) throw new Error('No PDF files given')
   const merged = await PDFDocument.create()
   for (const f of files) {
     const src = await PDFDocument.load(await readFile(f))
     const pages = await merged.copyPages(src, src.getPageIndices())
     pages.forEach((p) => merged.addPage(p))
   }
-  const out = join(dirname(files[0]), 'merged.pdf')
+  const out = uniquePath(dirname(files[0]), 'merged', 'pdf')
   await writeFile(out, await merged.save())
   return out
 }
@@ -126,27 +183,51 @@ export async function splitPdf(file: string): Promise<string[]> {
     const doc = await PDFDocument.create()
     const [page] = await doc.copyPages(src, [i])
     doc.addPage(page)
-    const out = join(dir, `${name}-p${String(i + 1).padStart(3, '0')}.pdf`)
+    const out = uniquePath(dir, `${name}-p${String(i + 1).padStart(3, '0')}`, 'pdf')
     await writeFile(out, await doc.save())
     outputs.push(out)
   }
   return outputs
 }
 
-/** Zip the given files into a new "archive.zip". */
+/** Zip the given files into a new "archive.zip" (unique names inside the zip). */
 export async function zipFiles(files: string[]): Promise<string> {
+  if (files.length === 0) throw new Error('No files given')
   const zip = new AdmZip()
-  for (const f of files) zip.addLocalFile(f)
-  const out = join(dirname(files[0]), 'archive.zip')
+  const used = new Set<string>()
+  for (const f of files) {
+    const ext = extname(f)
+    let entry = basename(f)
+    let i = 1
+    while (used.has(entry)) {
+      entry = `${basename(f, ext)}-${i}${ext}`
+      i++
+    }
+    used.add(entry)
+    zip.addLocalFile(f, '', entry)
+  }
+  const out = uniquePath(dirname(files[0]), 'archive', 'zip')
   zip.writeZip(out)
   return out
 }
 
-/** Extract an archive into a new "<name>-extracted" folder next to it. */
+/** Extract an archive into a new folder next to it, refusing unsafe (Zip Slip) paths. */
 export async function unzip(file: string): Promise<string> {
   const zip = new AdmZip(file)
-  const out = join(dirname(file), `${basename(file, extname(file))}-extracted`)
+  let out = join(dirname(file), `${basename(file, extname(file))}-extracted`)
+  let i = 1
+  while (existsSync(out)) {
+    out = join(dirname(file), `${basename(file, extname(file))}-extracted-${i}`)
+    i++
+  }
+  const outResolved = resolve(out)
+  for (const entry of zip.getEntries()) {
+    const target = resolve(out, entry.entryName)
+    if (target !== outResolved && !target.startsWith(outResolved + sep)) {
+      throw new Error(`Unsafe path in archive: ${entry.entryName}`)
+    }
+  }
   await mkdir(out, { recursive: true })
-  zip.extractAllTo(out, true)
+  zip.extractAllTo(out, false)
   return out
 }

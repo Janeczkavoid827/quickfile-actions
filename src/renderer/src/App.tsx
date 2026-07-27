@@ -231,7 +231,15 @@ export default function App() {
               </Btn>
               <Btn
                 disabled={busy || files.length !== 1}
-                onClick={async () => qf.copyText(await qf.hash(files[0]))}
+                onClick={async () => {
+                  try {
+                    setStatus(t('working'))
+                    await qf.copyText(await qf.hash(files[0]))
+                    setStatus('SHA-256 ✓')
+                  } catch (e) {
+                    setStatus(e instanceof Error ? e.message : String(e))
+                  }
+                }}
               >
                 {t('sha')}
               </Btn>
@@ -241,7 +249,21 @@ export default function App() {
             </ActionRow>
           </div>
 
-          {showRename && <RenamePanel files={files} onDone={() => setFiles([])} />}
+          {showRename && (
+            <RenamePanel
+              files={files}
+              onApplied={(res) => {
+                setResults(res)
+                const ok = res.filter((r) => r.ok).length
+                setStatus(`Rename: ${ok}/${res.length} ${t('done')}`)
+                // Only clear the list if every file was actually renamed.
+                if (res.length > 0 && res.every((r) => r.ok)) {
+                  setFiles([])
+                  setShowRename(false)
+                }
+              }}
+            />
+          )}
 
           {/* status + results */}
           <p aria-live="polite" className="mt-5 text-sm text-[var(--color-ink-dim)]">
@@ -316,14 +338,32 @@ function Btn({
   )
 }
 
-function RenamePanel({ files, onDone }: { files: string[]; onDone: () => void }) {
+function RenamePanel({
+  files,
+  onApplied,
+}: {
+  files: string[]
+  onApplied: (res: OpResult[]) => void
+}) {
   const { t } = useTranslation()
   const [rule, setRule] = useState({ prefix: '', suffix: '', find: '', replace: '', sequence: false })
   const [plan, setPlan] = useState<RenamePlanItem[]>([])
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     void qf.planRename(files, rule).then(setPlan)
   }, [files, rule])
+
+  const apply = async () => {
+    setBusy(true)
+    try {
+      onApplied(await qf.applyRename(plan))
+    } catch (e) {
+      onApplied([{ ok: false, input: files[0] ?? '', error: e instanceof Error ? e.message : String(e) }])
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const field = (key: keyof typeof rule, label: string) => (
     <label className="flex flex-col text-xs text-[var(--color-ink-dim)]">
@@ -361,8 +401,9 @@ function RenamePanel({ files, onDone }: { files: string[]; onDone: () => void })
         ))}
       </div>
       <button
-        onClick={() => qf.applyRename(plan).then(onDone)}
-        className="mt-3 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black"
+        onClick={apply}
+        disabled={busy || plan.every((p) => p.from === p.to)}
+        className="mt-3 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
       >
         {t('apply')}
       </button>

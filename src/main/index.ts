@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell, clipboard, dialog, Menu } from 'electron'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { existsSync, statSync } from 'node:fs'
 import {
   convertImage,
@@ -21,14 +21,17 @@ let pendingFiles: string[] = []
 
 /** Pull real file paths out of a process argv (used by "Open with"). */
 function filesFromArgv(argv: string[]): string[] {
-  return argv.slice(1).filter((a) => {
-    if (a.startsWith('-') || a === '.') return false
-    try {
-      return existsSync(a) && statSync(a).isFile()
-    } catch {
-      return false
-    }
-  })
+  return argv
+    .slice(1)
+    .filter((a) => a !== '.' && !a.startsWith('--'))
+    .map((a) => resolve(a))
+    .filter((a) => {
+      try {
+        return existsSync(a) && statSync(a).isFile()
+      } catch {
+        return false
+      }
+    })
 }
 
 function sendOpenFiles(files: string[]): void {
@@ -41,15 +44,23 @@ async function runBatch(
   files: string[],
   fn: (f: string) => Promise<string>,
 ): Promise<OpResult[]> {
-  return Promise.all(
-    files.map(async (input): Promise<OpResult> => {
+  // Bounded concurrency so a big batch doesn't spawn hundreds of parallel
+  // sharp/pdf pipelines and blow up memory.
+  const limit = Math.min(4, files.length)
+  const results: OpResult[] = new Array(files.length)
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < files.length) {
+      const i = next++
       try {
-        return { ok: true, input, output: await fn(input) }
+        results[i] = { ok: true, input: files[i], output: await fn(files[i]) }
       } catch (e) {
-        return { ok: false, input, error: e instanceof Error ? e.message : String(e) }
+        results[i] = { ok: false, input: files[i], error: e instanceof Error ? e.message : String(e) }
       }
-    }),
-  )
+    }
+  }
+  await Promise.all(Array.from({ length: Math.max(1, limit) }, worker))
+  return results
 }
 
 function createWindow(): void {
@@ -128,13 +139,7 @@ function registerIpc(): void {
   })
 
   ipcMain.handle('planRename', (_e, files: string[], rule: RenameRule) => planRename(files, rule))
-  ipcMain.handle('applyRename', (_e, plan: RenamePlanItem[]) =>
-    applyRename(plan)
-      .then((): OpResult[] => plan.map((p) => ({ ok: true, input: p.from, output: p.to })))
-      .catch((e): OpResult[] => [
-        { ok: false, input: '', error: e instanceof Error ? e.message : String(e) },
-      ]),
-  )
+  ipcMain.handle('applyRename', (_e, plan: RenamePlanItem[]) => applyRename(plan))
 }
 
 // macOS "Open with" delivers files through this event.

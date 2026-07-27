@@ -5,11 +5,20 @@ import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
 import AdmZip from "adm-zip";
 import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { basename, dirname, extname, join } from "node:path";
+import { basename, dirname, extname, join, resolve, sep } from "node:path";
+function uniquePath(dir, stem, ext) {
+  let p = join(dir, `${stem}.${ext}`);
+  let i = 1;
+  while (existsSync(p)) {
+    p = join(dir, `${stem}-${i}.${ext}`);
+    i++;
+  }
+  return p;
+}
 function outPath(input, suffix, ext) {
-  return join(dirname(input), `${basename(input, extname(input))}-${suffix}.${ext}`);
+  return uniquePath(dirname(input), `${basename(input, extname(input))}-${suffix}`, ext);
 }
 var normExt = (input) => {
   const e = extname(input).slice(1).toLowerCase();
@@ -52,22 +61,23 @@ async function removeMetadata(input) {
   return out;
 }
 function hashFile(input, algo = "sha256") {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve2, reject) => {
     const h = createHash(algo);
     const s = createReadStream(input);
     s.on("data", (d) => h.update(d));
-    s.on("end", () => resolve(h.digest("hex")));
+    s.on("end", () => resolve2(h.digest("hex")));
     s.on("error", reject);
   });
 }
 async function mergePdfs(files) {
+  if (files.length === 0) throw new Error("No PDF files given");
   const merged = await PDFDocument.create();
   for (const f of files) {
     const src = await PDFDocument.load(await readFile(f));
     const pages = await merged.copyPages(src, src.getPageIndices());
     pages.forEach((p) => merged.addPage(p));
   }
-  const out = join(dirname(files[0]), "merged.pdf");
+  const out = uniquePath(dirname(files[0]), "merged", "pdf");
   await writeFile(out, await merged.save());
   return out;
 }
@@ -81,24 +91,48 @@ async function splitPdf(file) {
     const doc = await PDFDocument.create();
     const [page] = await doc.copyPages(src, [i]);
     doc.addPage(page);
-    const out = join(dir, `${name}-p${String(i + 1).padStart(3, "0")}.pdf`);
+    const out = uniquePath(dir, `${name}-p${String(i + 1).padStart(3, "0")}`, "pdf");
     await writeFile(out, await doc.save());
     outputs.push(out);
   }
   return outputs;
 }
 async function zipFiles(files) {
+  if (files.length === 0) throw new Error("No files given");
   const zip = new AdmZip();
-  for (const f of files) zip.addLocalFile(f);
-  const out = join(dirname(files[0]), "archive.zip");
+  const used = /* @__PURE__ */ new Set();
+  for (const f of files) {
+    const ext = extname(f);
+    let entry = basename(f);
+    let i = 1;
+    while (used.has(entry)) {
+      entry = `${basename(f, ext)}-${i}${ext}`;
+      i++;
+    }
+    used.add(entry);
+    zip.addLocalFile(f, "", entry);
+  }
+  const out = uniquePath(dirname(files[0]), "archive", "zip");
   zip.writeZip(out);
   return out;
 }
 async function unzip(file) {
   const zip = new AdmZip(file);
-  const out = join(dirname(file), `${basename(file, extname(file))}-extracted`);
+  let out = join(dirname(file), `${basename(file, extname(file))}-extracted`);
+  let i = 1;
+  while (existsSync(out)) {
+    out = join(dirname(file), `${basename(file, extname(file))}-extracted-${i}`);
+    i++;
+  }
+  const outResolved = resolve(out);
+  for (const entry of zip.getEntries()) {
+    const target = resolve(out, entry.entryName);
+    if (target !== outResolved && !target.startsWith(outResolved + sep)) {
+      throw new Error(`Unsafe path in archive: ${entry.entryName}`);
+    }
+  }
   await mkdir(out, { recursive: true });
-  zip.extractAllTo(out, true);
+  zip.extractAllTo(out, false);
   return out;
 }
 

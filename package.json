@@ -1,6 +1,6 @@
 {
   "name": "quickfile",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "QuickFile Actions — a free, open-source, cross-platform file toolkit. Convert, resize, compress, rename and clean files locally on Windows, macOS and Linux. No websites, no uploads.",
   "author": {
     "name": "MalyStern",
@@ -46,6 +46,10 @@
     "files": [
       "out/**/*"
     ],
+    "asarUnpack": [
+      "**/node_modules/sharp/**",
+      "**/node_modules/@img/**"
+    ],
     "win": {
       "target": [
         "nsis"
@@ -56,8 +60,7 @@
         {
           "target": "dmg",
           "arch": [
-            "arm64",
-            "x64"
+            "arm64"
           ]
         }
       ],
