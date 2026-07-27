@@ -1,0 +1,65 @@
+{
+  "name": "quickfile",
+  "version": "0.1.0",
+  "description": "QuickFile Actions — a free, open-source, cross-platform file toolkit. Convert, resize, compress, rename and clean files locally on Windows, macOS and Linux. No websites, no uploads.",
+  "author": { "name": "MalyStern", "email": "5829404@gmail.com" },
+  "license": "MIT",
+  "homepage": "https://github.com/MalyStern/quickfile-actions",
+  "repository": { "type": "git", "url": "https://github.com/MalyStern/quickfile-actions" },
+  "keywords": [
+    "file-converter",
+    "heic-to-jpg",
+    "image-converter",
+    "resize-images",
+    "compress-images",
+    "remove-exif",
+    "batch-rename",
+    "local-first",
+    "cross-platform",
+    "powertoys-alternative",
+    "electron"
+  ],
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "test": "vitest run",
+    "dist": "electron-vite build && electron-builder --publish never",
+    "dist:dir": "electron-vite build && electron-builder --dir"
+  },
+  "build": {
+    "appId": "dev.malystern.quickfile",
+    "productName": "QuickFile Actions",
+    "icon": "build/icon.png",
+    "directories": { "output": "release" },
+    "files": ["out/**/*"],
+    "win": { "target": ["nsis"] },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": "universal" }],
+      "category": "public.app-category.utilities"
+    },
+    "linux": { "target": ["AppImage", "deb"], "category": "Utility" }
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "i18next": "^26.3.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.0.11",
+    "sharp": "^0.35.3"
+  }
+}
