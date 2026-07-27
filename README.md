@@ -26,9 +26,10 @@ Drop files in (or open them with QuickFile) and run a quick action. Everything h
 - **Remove metadata** — strip EXIF/GPS from photos before sharing.
 - **Batch rename** — prefix/suffix/find-replace/numbering, with a live preview.
 - **PDF** — merge several PDFs into one, or split one into single-page files.
+- **ZIP** — zip the selected files, or extract an archive.
 - **Copy** — a file's name, full path, or **SHA-256** checksum.
 
-More formats (PDF compress, ZIP, video/audio) are on the roadmap.
+More formats (PDF compression, video/audio conversion, OCR) are on the roadmap.
 
 ## Status
 

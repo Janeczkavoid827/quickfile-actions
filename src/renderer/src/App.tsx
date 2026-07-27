@@ -32,6 +32,7 @@ export default function App() {
 
   const hasImages = useMemo(() => files.some((f) => IMAGE_EXTS.has(extOf(f))), [files])
   const pdfFiles = useMemo(() => files.filter((f) => extOf(f) === 'pdf'), [files])
+  const zipFile = useMemo(() => files.find((f) => extOf(f) === 'zip'), [files])
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -211,6 +212,16 @@ export default function App() {
                 </Btn>
               </ActionRow>
             )}
+            <ActionRow label={t('archive')}>
+              <Btn disabled={busy} onClick={() => run('Zip', () => qf.zip(files))}>
+                📦 {t('makeZip')}
+              </Btn>
+              {zipFile && (
+                <Btn disabled={busy} onClick={() => run('Extract', () => qf.unzip(zipFile))}>
+                  {t('extract')}
+                </Btn>
+              )}
+            </ActionRow>
             <ActionRow label={t('copy')}>
               <Btn disabled={busy} onClick={() => qf.copyText(files.map(base).join('\n'))}>
                 {t('name')}

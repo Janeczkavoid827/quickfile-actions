@@ -50,6 +50,9 @@ export interface Dict {
   pdf?: string
   merge?: string
   split?: string
+  archive?: string
+  makeZip?: string
+  extract?: string
 }
 
 const en: Dict = {
@@ -86,6 +89,9 @@ const en: Dict = {
   pdf: 'PDF',
   merge: 'Merge',
   split: 'Split into pages',
+  archive: 'Archive',
+  makeZip: 'Create ZIP',
+  extract: 'Extract',
 }
 
 const he: Dict = {
@@ -122,6 +128,9 @@ const he: Dict = {
   pdf: 'PDF',
   merge: 'איחוד',
   split: 'פיצול לעמודים',
+  archive: 'ארכיון',
+  makeZip: 'צור ZIP',
+  extract: 'חילוץ',
 }
 
 const es: Dict = {

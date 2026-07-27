@@ -28,6 +28,8 @@ export interface QuickFileApi {
   removeMetadata(files: string[]): Promise<OpResult[]>
   mergePdf(files: string[]): Promise<OpResult[]>
   splitPdf(file: string): Promise<OpResult[]>
+  zip(files: string[]): Promise<OpResult[]>
+  unzip(file: string): Promise<OpResult[]>
   hash(file: string): Promise<string>
 
   copyText(text: string): Promise<void>

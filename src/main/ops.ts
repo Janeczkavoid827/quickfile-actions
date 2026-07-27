@@ -4,9 +4,10 @@
 
 import sharp from 'sharp'
 import { PDFDocument } from 'pdf-lib'
+import AdmZip from 'adm-zip'
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import type { ImageFormat, RenameRule, RenamePlanItem } from '../shared/types'
 
@@ -130,4 +131,22 @@ export async function splitPdf(file: string): Promise<string[]> {
     outputs.push(out)
   }
   return outputs
+}
+
+/** Zip the given files into a new "archive.zip". */
+export async function zipFiles(files: string[]): Promise<string> {
+  const zip = new AdmZip()
+  for (const f of files) zip.addLocalFile(f)
+  const out = join(dirname(files[0]), 'archive.zip')
+  zip.writeZip(out)
+  return out
+}
+
+/** Extract an archive into a new "<name>-extracted" folder next to it. */
+export async function unzip(file: string): Promise<string> {
+  const zip = new AdmZip(file)
+  const out = join(dirname(file), `${basename(file, extname(file))}-extracted`)
+  await mkdir(out, { recursive: true })
+  zip.extractAllTo(out, true)
+  return out
 }

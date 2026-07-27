@@ -8,6 +8,8 @@ const api: QuickFileApi = {
   removeMetadata: (files) => ipcRenderer.invoke('removeMetadata', files),
   mergePdf: (files) => ipcRenderer.invoke('mergePdf', files),
   splitPdf: (file) => ipcRenderer.invoke('splitPdf', file),
+  zip: (files) => ipcRenderer.invoke('zip', files),
+  unzip: (file) => ipcRenderer.invoke('unzip', file),
   hash: (file) => ipcRenderer.invoke('hash', file),
 
   copyText: (text) => ipcRenderer.invoke('copyText', text),

@@ -13,6 +13,8 @@ import {
   planRename,
   mergePdfs,
   splitPdf,
+  zipFiles,
+  unzip,
 } from './ops'
 
 // Disable sharp's operation cache so it doesn't keep temp files locked on Windows.
@@ -87,5 +89,21 @@ describe('pdf ops', () => {
     const parts = await splitPdf(pdf)
     expect(parts.length).toBe(2)
     expect((await PDFDocument.load(await readFile(parts[0]))).getPageCount()).toBe(1)
+  })
+})
+
+describe('zip ops', () => {
+  it('zips files and extracts them back', async () => {
+    const a = join(dir, 'x.txt')
+    const b = join(dir, 'y.txt')
+    await writeFile(a, 'hello')
+    await writeFile(b, 'world')
+
+    const zip = await zipFiles([a, b])
+    expect(zip.endsWith('archive.zip')).toBe(true)
+
+    const outDir = await unzip(zip)
+    expect((await readFile(join(outDir, 'x.txt'))).toString()).toBe('hello')
+    expect((await readFile(join(outDir, 'y.txt'))).toString()).toBe('world')
   })
 })

@@ -11,6 +11,8 @@ import {
   applyRename,
   mergePdfs,
   splitPdf,
+  zipFiles,
+  unzip,
 } from './ops'
 import type { ImageFormat, OpResult, RenameRule, RenamePlanItem } from '../shared/types'
 
@@ -95,6 +97,20 @@ function registerIpc(): void {
   ipcMain.handle('splitPdf', async (_e, file: string): Promise<OpResult[]> => {
     try {
       return (await splitPdf(file)).map((output) => ({ ok: true, input: file, output }))
+    } catch (e) {
+      return [{ ok: false, input: file, error: e instanceof Error ? e.message : String(e) }]
+    }
+  })
+  ipcMain.handle('zip', async (_e, files: string[]): Promise<OpResult[]> => {
+    try {
+      return [{ ok: true, input: files[0], output: await zipFiles(files) }]
+    } catch (e) {
+      return [{ ok: false, input: files[0] ?? '', error: e instanceof Error ? e.message : String(e) }]
+    }
+  })
+  ipcMain.handle('unzip', async (_e, file: string): Promise<OpResult[]> => {
+    try {
+      return [{ ok: true, input: file, output: await unzip(file) }]
     } catch (e) {
       return [{ ok: false, input: file, error: e instanceof Error ? e.message : String(e) }]
     }
