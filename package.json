@@ -1,11 +1,17 @@
 {
   "name": "quickfile",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "QuickFile Actions — a free, open-source, cross-platform file toolkit. Convert, resize, compress, rename and clean files locally on Windows, macOS and Linux. No websites, no uploads.",
-  "author": { "name": "MalyStern", "email": "5829404@gmail.com" },
+  "author": {
+    "name": "MalyStern",
+    "email": "5829404@gmail.com"
+  },
   "license": "MIT",
   "homepage": "https://github.com/MalyStern/quickfile-actions",
-  "repository": { "type": "git", "url": "https://github.com/MalyStern/quickfile-actions" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MalyStern/quickfile-actions"
+  },
   "keywords": [
     "file-converter",
     "heic-to-jpg",
@@ -32,14 +38,36 @@
     "appId": "dev.malystern.quickfile",
     "productName": "QuickFile Actions",
     "icon": "build/icon.png",
-    "directories": { "output": "release" },
-    "files": ["out/**/*"],
-    "win": { "target": ["nsis"] },
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
       "category": "public.app-category.utilities"
     },
-    "linux": { "target": ["AppImage", "deb"], "category": "Utility" }
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    }
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -57,6 +85,7 @@
   },
   "dependencies": {
     "i18next": "^26.3.6",
+    "pdf-lib": "^1.17.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-i18next": "^17.0.11",

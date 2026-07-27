@@ -31,6 +31,7 @@ export default function App() {
   }, [])
 
   const hasImages = useMemo(() => files.some((f) => IMAGE_EXTS.has(extOf(f))), [files])
+  const pdfFiles = useMemo(() => files.filter((f) => extOf(f) === 'pdf'), [files])
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -191,6 +192,22 @@ export default function App() {
                 </Btn>
                 <Btn disabled={busy} onClick={() => run('Clean', () => qf.removeMetadata(files))}>
                   🔒 {t('cleanMeta')}
+                </Btn>
+              </ActionRow>
+            )}
+            {pdfFiles.length > 0 && (
+              <ActionRow label={t('pdf')}>
+                <Btn
+                  disabled={busy || pdfFiles.length < 2}
+                  onClick={() => run('Merge', () => qf.mergePdf(pdfFiles))}
+                >
+                  {t('merge')}
+                </Btn>
+                <Btn
+                  disabled={busy || pdfFiles.length !== 1}
+                  onClick={() => run('Split', () => qf.splitPdf(pdfFiles[0]))}
+                >
+                  {t('split')}
                 </Btn>
               </ActionRow>
             )}

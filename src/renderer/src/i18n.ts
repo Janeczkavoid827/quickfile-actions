@@ -47,6 +47,9 @@ export interface Dict {
   sequence: string
   previewTitle: string
   footer: string
+  pdf?: string
+  merge?: string
+  split?: string
 }
 
 const en: Dict = {
@@ -80,6 +83,9 @@ const en: Dict = {
   sequence: 'Number them (001, 002…)',
   previewTitle: 'Preview',
   footer: 'Free & open source · 100% local · nothing is uploaded',
+  pdf: 'PDF',
+  merge: 'Merge',
+  split: 'Split into pages',
 }
 
 const he: Dict = {
@@ -113,6 +119,9 @@ const he: Dict = {
   sequence: 'מספור (001, 002…)',
   previewTitle: 'תצוגה מקדימה',
   footer: 'חינם וקוד פתוח · 100% מקומי · שום דבר לא עולה לרשת',
+  pdf: 'PDF',
+  merge: 'איחוד',
+  split: 'פיצול לעמודים',
 }
 
 const es: Dict = {

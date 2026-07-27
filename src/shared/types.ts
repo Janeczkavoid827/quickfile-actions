@@ -26,6 +26,8 @@ export interface QuickFileApi {
   resize(files: string[], opts: { width?: number; percent?: number }): Promise<OpResult[]>
   compress(files: string[]): Promise<OpResult[]>
   removeMetadata(files: string[]): Promise<OpResult[]>
+  mergePdf(files: string[]): Promise<OpResult[]>
+  splitPdf(file: string): Promise<OpResult[]>
   hash(file: string): Promise<string>
 
   copyText(text: string): Promise<void>

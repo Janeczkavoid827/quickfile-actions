@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import sharp from 'sharp'
-import { mkdtemp, rm, stat } from 'node:fs/promises'
+import { PDFDocument } from 'pdf-lib'
+import { mkdtemp, rm, stat, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -10,6 +11,8 @@ import {
   removeMetadata,
   hashFile,
   planRename,
+  mergePdfs,
+  splitPdf,
 } from './ops'
 
 // Disable sharp's operation cache so it doesn't keep temp files locked on Windows.
@@ -67,5 +70,22 @@ describe('hash + rename', () => {
     const plan = planRename(['/x/a.jpg', '/x/b.jpg'], { prefix: 'trip-', sequence: true })
     expect(plan[0].to).toBe(join('/x', 'trip-a-001.jpg'))
     expect(plan[1].to).toBe(join('/x', 'trip-b-002.jpg'))
+  })
+})
+
+describe('pdf ops', () => {
+  it('merges and splits PDFs', async () => {
+    const doc = await PDFDocument.create()
+    doc.addPage([200, 200])
+    doc.addPage([200, 200])
+    const pdf = join(dir, 'a.pdf')
+    await writeFile(pdf, await doc.save())
+
+    const merged = await mergePdfs([pdf, pdf])
+    expect((await PDFDocument.load(await readFile(merged))).getPageCount()).toBe(4)
+
+    const parts = await splitPdf(pdf)
+    expect(parts.length).toBe(2)
+    expect((await PDFDocument.load(await readFile(parts[0]))).getPageCount()).toBe(1)
   })
 })

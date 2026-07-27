@@ -3,9 +3,10 @@
 // original (e.g. photo.heic -> photo-jpg.jpg) and never overwrites the source.
 
 import sharp from 'sharp'
+import { PDFDocument } from 'pdf-lib'
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { rename } from 'node:fs/promises'
+import { readFile, rename, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import type { ImageFormat, RenameRule, RenamePlanItem } from '../shared/types'
 
@@ -98,4 +99,35 @@ export async function applyRename(plan: RenamePlanItem[]): Promise<void> {
   for (const item of plan) {
     if (item.from !== item.to) await rename(item.from, item.to)
   }
+}
+
+/** Merge several PDFs (in the given order) into one new "merged.pdf". */
+export async function mergePdfs(files: string[]): Promise<string> {
+  const merged = await PDFDocument.create()
+  for (const f of files) {
+    const src = await PDFDocument.load(await readFile(f))
+    const pages = await merged.copyPages(src, src.getPageIndices())
+    pages.forEach((p) => merged.addPage(p))
+  }
+  const out = join(dirname(files[0]), 'merged.pdf')
+  await writeFile(out, await merged.save())
+  return out
+}
+
+/** Split a PDF into one file per page (doc-p001.pdf, doc-p002.pdf, …). */
+export async function splitPdf(file: string): Promise<string[]> {
+  const src = await PDFDocument.load(await readFile(file))
+  const dir = dirname(file)
+  const name = basename(file, extname(file))
+  const outputs: string[] = []
+  const count = src.getPageCount()
+  for (let i = 0; i < count; i++) {
+    const doc = await PDFDocument.create()
+    const [page] = await doc.copyPages(src, [i])
+    doc.addPage(page)
+    const out = join(dir, `${name}-p${String(i + 1).padStart(3, '0')}.pdf`)
+    await writeFile(out, await doc.save())
+    outputs.push(out)
+  }
+  return outputs
 }

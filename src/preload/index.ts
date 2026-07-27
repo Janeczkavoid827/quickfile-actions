@@ -6,6 +6,8 @@ const api: QuickFileApi = {
   resize: (files, opts) => ipcRenderer.invoke('resize', files, opts),
   compress: (files) => ipcRenderer.invoke('compress', files),
   removeMetadata: (files) => ipcRenderer.invoke('removeMetadata', files),
+  mergePdf: (files) => ipcRenderer.invoke('mergePdf', files),
+  splitPdf: (file) => ipcRenderer.invoke('splitPdf', file),
   hash: (file) => ipcRenderer.invoke('hash', file),
 
   copyText: (text) => ipcRenderer.invoke('copyText', text),
